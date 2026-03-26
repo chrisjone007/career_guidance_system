@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+/* Keep your custom CSS below this */
+body {
+  background-color: #f9fafb;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+@media print {
+  /* Hide the elements with the .no-print class */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Remove sidebars and main layout margins so the roadmap centers on paper */
+  aside, .sidebar, nav {
+    display: none !important;
+  }
+
+  body, main {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  .ml-72 { /* If your sidebar offset is 72 */
+    margin-left: 0 !important;
+  }
+}
