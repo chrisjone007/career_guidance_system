@@ -1,15 +1,4 @@
-# Node
-node_modules/
-
-# Python
-__pycache__/
-*.pyc
-venv/
-
-# Environment files
 .env
-.env.*
-
-# Build
-dist/
-build/
+node_modules/
+__pycache__/
+*.db

@@ -1,22 +1,19 @@
-// 1. ADD THIS IMPORT LINE AT THE VERY TOP
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getFirestore } from "firebase/firestore"; // <--- THIS WAS MISSING
+import { getFirestore } from "firebase/firestore";
 
-// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyDPor_RFss3f7EanRmovmZq9GsJleOV3GM",
-  authDomain: "facultyportal-2026.firebaseapp.com",
-  projectId: "facultyportal-2026",
-  storageBucket: "facultyportal-2026.firebasestorage.app",
-  messagingSenderId: "599100569745",
-  appId: "1:599100569745:web:79301cd7f197ed216ae730",
-  measurementId: "G-8VXNYS244T"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
-// 2. Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 
-// 3. Initialize and EXPORT Firestore
+// Export the database to use in LandingPage.jsx and other components
 export const db = getFirestore(app);

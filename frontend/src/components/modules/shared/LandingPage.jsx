@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react'; // Added useEffect
+import React, { useState, useEffect } from 'react'; 
 import { useNavigate } from 'react-router-dom';
-import { db } from '../../../services/firebase'; // Ensure this path matches your folder structure
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore"; 
+import { db } from '../../../services/firebase'; 
+import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs} from "firebase/firestore"; 
 import { collection, query, where, getDocs } from "firebase/firestore";
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -14,20 +14,15 @@ const LandingPage = () => {
   const [showForgotId, setShowForgotId] = useState(false);
 const [searchName, setSearchName] = useState('');
 const [foundId, setFoundId] = useState(null);
-
-// 2. Updated Search Function
 const handleFindId = async (e) => {
   e.preventDefault();
   setLoading(true);
   setFoundId(null);
-
-  // Convert whatever the user types into lowercase to match our database
   const searchInput = searchName.toLowerCase().trim();
 
   try {
     const studentsRef = collection(db, "students");
-    
-    // We query the 'searchName' field instead of the display 'name'
+  
     const q = query(studentsRef, where("searchName", "==", searchInput));
     
     const querySnapshot = await getDocs(q);
@@ -96,13 +91,10 @@ const handleFindId = async (e) => {
   const inputId = studentId.toUpperCase().trim();
 
   try {
-    const studentRef = doc(db, "students", inputId);
-    
-    // SAVE TO CLOUD with a search-friendly field
+    const studentRef = doc(db, "students", studentId.toUpperCase().trim());
     await setDoc(studentRef, {
-      id: inputId,
+      id: studentId.toUpperCase().trim(),
       name: studentName.trim(), 
-      // This line is the secret to making search work!
       searchName: studentName.toLowerCase().trim(), 
       field: selectedField,
       createdAt: serverTimestamp()

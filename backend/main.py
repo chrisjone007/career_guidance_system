@@ -1,10 +1,14 @@
+import os
 from fastapi import FastAPI, Body, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import sqlite3
 import google.generativeai as genai
 from pydantic import BaseModel
 from typing import List
-
+from dotenv import load_dotenv
+load_dotenv()
+API_KEY = os.getenv("AIzaSyDcKsjKMmurP4YjdihXOcpMDxIG6OxKXS8")
+genai.configure(api_key=API_KEY)
 app = FastAPI()
 
 app.add_middleware(
@@ -14,11 +18,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize Gemini with System Instructions
-# REPLACE "YOUR_API_KEY" with your actual key from Google AI Studio
-genai.configure(api_key="YOUR_API_KEY")
-
-# Adding system_instruction forces the AI to follow your faculty rules
+genai.configure(api_key="AIzaSyDcKsjKMmurP4YjdihXOcpMDxIG6OxKXS8")
 model = genai.GenerativeModel(
     model_name='gemini-1.5-flash-latest',
     system_instruction="You are a strict Career Mentor for the Faculty of Computing. You MUST recommend ONLY one of these 5 fields: Software Engineering, Data Science, Cybersecurity, AI & Robotics, or Cloud Computing. Do not be generic."
