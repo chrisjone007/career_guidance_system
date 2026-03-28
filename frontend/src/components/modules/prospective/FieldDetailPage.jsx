@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import API_BASE_URL from '../../../api/config';
+import API_BASE_URL from '../../../../api/config';
 const FieldDetailPage = () => {
   const printAreaRef = useRef();
   const { fieldId } = useParams();
