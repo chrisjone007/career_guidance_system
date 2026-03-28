@@ -32,7 +32,9 @@ def get_db_connection():
     conn = sqlite3.connect('career_guidance.db')
     conn.row_factory = sqlite3.Row
     return conn
-
+@app.get("/")
+async def root():
+    return {"message": "Career Guidance API is running 🚀"}
 # --- PROSPECTIVE ROUTES ---
 
 @app.get("/prospective/fields")
