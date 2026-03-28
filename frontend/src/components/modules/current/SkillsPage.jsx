@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { db } from '../../../services/firebase'; 
 import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
-
+import API_BASE_URL from '../../../api/config';
 const SkillsPage = () => {
   const [skills, setSkills] = useState([]);
   const [completedSkills, setCompletedSkills] = useState([]);
@@ -24,7 +24,7 @@ const SkillsPage = () => {
     const fetchSkillsData = async () => {
       try {
         // 1. Fetch required skills from your Backend API
-        const apiRes = await axios.get(`http://127.0.0.1:8000/current/skills/${fieldId}`);
+        const apiRes = await axios.get(`${API_BASE_URL}/current/skills/${fieldId}`);
         setSkills(apiRes.data.required_skills);
 
         // 2. Fetch saved progress from Firebase Cloud

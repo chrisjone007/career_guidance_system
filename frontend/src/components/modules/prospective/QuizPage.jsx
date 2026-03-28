@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-
+import API_BASE_URL from '../../../api/config';
 const QuizPage = () => {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState([]);
@@ -94,7 +94,7 @@ const QuizPage = () => {
     setLoading(true);
     try {
       // This MUST match the 'QuizSubmission' class in your main.py
-      const res = await axios.post('https://faculty-api-pdud.onrender.com/prospective/quiz', {
+      const res = await axios.post(`${API_BASE_URL}/prospective/quiz`, {
         name: studentName, 
         answers: finalAnswers
       });

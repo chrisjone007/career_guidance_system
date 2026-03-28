@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-
+import API_BASE_URL from '../../../api/config';
 const CurrentDashboard = () => {
   const navigate = useNavigate();
   const [opportunities, setOpportunities] = useState([]);
@@ -26,7 +26,7 @@ const CurrentDashboard = () => {
   const savedProgress = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
 
   useEffect(() => {
-    axios.get(`https://faculty-api-pdud.onrender.com/${fieldId}`)
+    axios.get(`${API_BASE_URL}/${fieldId}`)
       .then(res => {
         setOpportunities(res.data);
         setLoading(false);

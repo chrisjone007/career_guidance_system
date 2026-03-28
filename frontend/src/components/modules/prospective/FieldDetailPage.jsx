@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-
+import API_BASE_URL from '../../../api/config';
 const FieldDetailPage = () => {
   const printAreaRef = useRef();
   const { fieldId } = useParams();
@@ -14,7 +14,7 @@ const FieldDetailPage = () => {
   };
 
   useEffect(() => {
-    axios.get(`http://127.0.0.1:8000/prospective/field/${fieldId}`)
+    axios.get(`${API_BASE_URL}/prospective/field/${fieldId}`)
       .then(res => {
         setFieldData(res.data);
         setLoading(false);

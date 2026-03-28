@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-
+import API_BASE_URL from '../../../api/config';
 const OpportunitiesPage = () => {
   const [fields, setFields] = useState([]);
   const [selectedField, setSelectedField] = useState("");
   const [jobs, setJobs] = useState([]);
 
   useEffect(() => {
-    axios.get('http://127.0.0.1:8000/prospective/fields').then(res => setFields(res.data));
+    axios.get(`${API_BASE_URL}/prospective/fields`).then(res => setFields(res.data));
   }, []);
 
   const handleFieldChange = (e) => {
     const id = e.target.value;
     setSelectedField(id);
     if (id) {
-      axios.get(`http://127.0.0.1:8000/current/opportunities/${id}`)
+      axios.get(`${API_BASE_URL}/current/opportunities/${id}`)
         .then(res => setJobs(res.data));
     }
   };

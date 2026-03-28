@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-
+import API_BASE_URL from '../../../api/config';
 const ProspectiveDashboard = () => {
   const [fields, setFields] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -9,7 +9,7 @@ const ProspectiveDashboard = () => {
 
   useEffect(() => {
     // Fetching the fields we defined in database.py
-    axios.get('https://faculty-api-pdud.onrender.com/prospective/fields')
+    axios.get(`${API_BASE_URL}/prospective/fields`)
       .then(res => {
         setFields(res.data);
         setLoading(false);
