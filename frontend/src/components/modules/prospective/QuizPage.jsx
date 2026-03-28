@@ -94,7 +94,7 @@ const QuizPage = () => {
     setLoading(true);
     try {
       // This MUST match the 'QuizSubmission' class in your main.py
-      const res = await axios.post('http://127.0.0.1:8000/prospective/quiz', {
+      const res = await axios.post('https://faculty-api-pdud.onrender.com/prospective/quiz', {
         name: studentName, 
         answers: finalAnswers
       });

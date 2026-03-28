@@ -26,8 +26,7 @@ const CurrentDashboard = () => {
   const savedProgress = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
 
   useEffect(() => {
-    // Fetch opportunities based on Deborah's specific department
-    axios.get(`http://127.0.0.1:8000/current/opportunities/${fieldId}`)
+    axios.get(`https://faculty-api-pdud.onrender.com/${fieldId}`)
       .then(res => {
         setOpportunities(res.data);
         setLoading(false);

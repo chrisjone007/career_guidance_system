@@ -9,7 +9,7 @@ const ProspectiveDashboard = () => {
 
   useEffect(() => {
     // Fetching the fields we defined in database.py
-    axios.get('http://127.0.0.1:8000/prospective/fields')
+    axios.get('https://faculty-api-pdud.onrender.com/prospective/fields')
       .then(res => {
         setFields(res.data);
         setLoading(false);
