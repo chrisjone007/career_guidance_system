@@ -17,3 +17,4 @@ const analytics = getAnalytics(app);
 
 // Export the database to use in LandingPage.jsx and other components
 export const db = getFirestore(app);
+export default app;
