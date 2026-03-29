@@ -1,3 +1,4 @@
 const API_BASE_URL = import.meta.env.MODE === 'development' 
     ? 'http://127.0.0.1:8000' 
-    : 'https://career-api.onrender.com'; // Paste your Render backend link here
+    : 'https://career-guidance-system-backend-ht7x.onrender.com'; 
+export default API_BASE_URL;
