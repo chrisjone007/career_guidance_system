@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import API_BASE_URL from '../../../../api/config';
+import API_BASE_URL from '../../../api/config';
 const QuizPage = () => {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState([]);

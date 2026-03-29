@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'; 
 import { useNavigate } from 'react-router-dom';
 import { db } from '../../../services/firebase'; 
-import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs} from "firebase/firestore"; 
+import { doc, getDoc, setDoc, serverTimestamp} from "firebase/firestore"; 
 import { collection, query, where, getDocs } from "firebase/firestore";
 const LandingPage = () => {
   const navigate = useNavigate();
