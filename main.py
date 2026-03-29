@@ -18,7 +18,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-genai.configure(api_key="AIzaSyDcKsjKMmurP4YjdihXOcpMDxIG6OxKXS8")
+genai.configure(api_key=API_KEY)
 model = genai.GenerativeModel(
     model_name='gemini-1.5-flash-latest',
     system_instruction="You are a strict Career Mentor for the Faculty of Computing. You MUST recommend ONLY one of these 5 fields: Software Engineering, Data Science, Cybersecurity, AI & Robotics, or Cloud Computing. Do not be generic."
@@ -32,9 +32,9 @@ def get_db_connection():
     conn = sqlite3.connect('career_guidance.db')
     conn.row_factory = sqlite3.Row
     return conn
-# @app.get("/")
-# async def root():
-#     return {"message": "Career Guidance API is running 🚀"}
+@app.get("/")
+async def root():
+    return {"message": "Career Guidance API is running 🚀"}
 # --- PROSPECTIVE ROUTES ---
 
 @app.get("/prospective/fields")
