@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { useEffect } from 'react'; // Added useEffect
+import { useEffect } from 'react';
 import LandingPage from './components/modules/shared/LandingPage';
 import ProspectiveDashboard from './components/modules/prospective/ProspectiveDashboard';
 import CurrentDashboard from './components/modules/current/CurrentDashboard';
@@ -10,37 +10,59 @@ import FieldDetailPage from './components/modules/prospective/FieldDetailPage';
 import Sidebar from './components/Sidebar';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import { auth } from './services/firebase';
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 
 // This sub-component handles layout logic (hiding sidebar on Home)
 const AppLayout = ({ children }) => {
   const location = useLocation();
   const isHomePage = location.pathname === '/';
 
-  // --- NEW: FIREBASE SESSION OBSERVER ---
   useEffect(() => {
-    // This listens to Firebase. If a user is not authenticated, 
-    // it clears our local "receipts" (localStorage).
+    // 1. FIREBASE SESSION OBSERVER
+    // Listens for auth changes and wipes local storage if logged out
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (!user) {
-        console.log("No active Firebase session found. Clearing local storage...");
+        console.log("No active Firebase session. Clearing credentials...");
         localStorage.clear();
       }
     });
 
-    // Clean up the listener when the app unmounts
-    return () => unsubscribe();
-  }, []);
+    // 2. IDLE TIMEOUT LOGIC
+    let idleTimer;
+    const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 Minutes
+
+    const handleLogout = () => {
+      console.log("User idle. Logging out for security...");
+      signOut(auth);
+    };
+
+    const resetTimer = () => {
+      if (idleTimer) clearTimeout(idleTimer);
+      idleTimer = setTimeout(handleLogout, INACTIVITY_LIMIT);
+    };
+
+    // Events to watch for activity
+    const activityEvents = ['mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
+
+    // Only start the watcher if the user is not on the home page (i.e., they are logged in)
+    if (!isHomePage) {
+      activityEvents.forEach(event => window.addEventListener(event, resetTimer));
+      resetTimer(); // Initialize timer
+    }
+
+    // Cleanup all listeners and timers
+    return () => {
+      unsubscribe();
+      if (idleTimer) clearTimeout(idleTimer);
+      activityEvents.forEach(event => window.removeEventListener(event, resetTimer));
+    };
+  }, [location.pathname, isHomePage]);
 
   return (
     <div className="min-h-screen bg-gray-100 font-sans flex">
-      {/* 1. Sidebar remains hidden on mobile via its own internal 'hidden md:flex' */}
       {!isHomePage && <Sidebar />}
 
-      {/* 2. Content Wrapper - ADJUSTED MARGIN FOR MOBILE */}
       <div className={`flex-1 ${!isHomePage ? 'md:ml-72' : ''} flex flex-col min-h-screen w-full`}>
-        
-        {/* Header - Made text sizes responsive for smaller screens */}
         <header className="w-full py-6 md:py-10 text-center px-4">
           <h1 className="text-3xl md:text-5xl font-extrabold text-blue-900 tracking-tight">
             Faculty of Computing
@@ -50,7 +72,6 @@ const AppLayout = ({ children }) => {
           </p>
         </header>
 
-        {/* Main Content - Adjusted padding for mobile */}
         <main className="max-w-7xl mx-auto px-4 md:px-8 pb-24 md:pb-20 w-full">
           {children}
         </main>
@@ -68,15 +89,11 @@ function App() {
     <Router>
       <AppLayout>
         <Routes>
-          {/* Public Route */}
           <Route path="/" element={<LandingPage />} />
-          
-          {/* Prospective Routes */}
           <Route path="/prospective" element={<ProspectiveDashboard />} />
           <Route path="/prospective/quiz" element={<QuizPage />} />
           <Route path="/prospective/field/:fieldId" element={<FieldDetailPage />} />
 
-          {/* Locked Current Student Routes */}
           <Route 
             path="/current" 
             element={
