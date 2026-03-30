@@ -33,13 +33,10 @@ class QuizSubmission(BaseModel):
     answers: List[str]
 
 def get_db_connection():
-    # 1. This gets the path to the 'backend' folder where main.py is located
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    
-    # 2. This points specifically to the DB file inside that same 'backend' folder
-    db_path = os.path.join(current_dir, "career_guidance.db")
-    
-    print(f"Connecting to database at: {db_path}") # This helps you debug in Render logs
+    # This gets the directory where main.py actually lives
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    # This joins that directory with the database name
+    db_path = os.path.join(base_dir, "career_guidance.db")
     
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
