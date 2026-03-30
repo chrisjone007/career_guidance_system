@@ -1,5 +1,15 @@
+import os
 import sqlite3
 
+def get_db_connection():
+    # 1. Get the absolute path of the current folder
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    # 2. Join it with the database filename
+    db_path = os.path.join(base_dir, "career_guidance.db")
+    
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    return conn
 def init_db():
     conn = sqlite3.connect('career_guidance.db')
     cursor = conn.cursor()

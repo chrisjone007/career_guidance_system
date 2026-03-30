@@ -33,7 +33,15 @@ class QuizSubmission(BaseModel):
     answers: List[str]
 
 def get_db_connection():
-    conn = sqlite3.connect('career_guidance.db')
+    # 1. This gets the path to the 'backend' folder where main.py is located
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # 2. This points specifically to the DB file inside that same 'backend' folder
+    db_path = os.path.join(current_dir, "career_guidance.db")
+    
+    print(f"Connecting to database at: {db_path}") # This helps you debug in Render logs
+    
+    conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn
 @app.get("/")
@@ -124,3 +132,11 @@ async def get_opportunities(field_id: int):
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
+if __name__ == "__main__":
+    # Check if DB exists, if not, create it
+    if not os.path.exists("career_guidance.db"):
+        from database import init_db # adjust this import to your filename
+        init_db()
+    
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
