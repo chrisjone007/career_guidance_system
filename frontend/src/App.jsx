@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { useEffect } from 'react'; // Added useEffect
 import LandingPage from './components/modules/shared/LandingPage';
 import ProspectiveDashboard from './components/modules/prospective/ProspectiveDashboard';
 import CurrentDashboard from './components/modules/current/CurrentDashboard';
@@ -8,11 +9,28 @@ import QuizPage from './components/modules/prospective/QuizPage';
 import FieldDetailPage from './components/modules/prospective/FieldDetailPage';
 import Sidebar from './components/Sidebar';
 import ProtectedRoute from './components/common/ProtectedRoute';
+import { auth } from './services/firebase';
+import { onAuthStateChanged } from "firebase/auth";
 
 // This sub-component handles layout logic (hiding sidebar on Home)
 const AppLayout = ({ children }) => {
   const location = useLocation();
   const isHomePage = location.pathname === '/';
+
+  // --- NEW: FIREBASE SESSION OBSERVER ---
+  useEffect(() => {
+    // This listens to Firebase. If a user is not authenticated, 
+    // it clears our local "receipts" (localStorage).
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        console.log("No active Firebase session found. Clearing local storage...");
+        localStorage.clear();
+      }
+    });
+
+    // Clean up the listener when the app unmounts
+    return () => unsubscribe();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-100 font-sans flex">
@@ -20,7 +38,6 @@ const AppLayout = ({ children }) => {
       {!isHomePage && <Sidebar />}
 
       {/* 2. Content Wrapper - ADJUSTED MARGIN FOR MOBILE */}
-      {/* Change: 'ml-72' becomes 'md:ml-72' so it is 0 on mobile */}
       <div className={`flex-1 ${!isHomePage ? 'md:ml-72' : ''} flex flex-col min-h-screen w-full`}>
         
         {/* Header - Made text sizes responsive for smaller screens */}
@@ -34,7 +51,6 @@ const AppLayout = ({ children }) => {
         </header>
 
         {/* Main Content - Adjusted padding for mobile */}
-        {/* Change: 'px-8' becomes 'px-4 md:px-8' */}
         <main className="max-w-7xl mx-auto px-4 md:px-8 pb-24 md:pb-20 w-full">
           {children}
         </main>
@@ -55,12 +71,12 @@ function App() {
           {/* Public Route */}
           <Route path="/" element={<LandingPage />} />
           
-          {/* Prospective Routes - Open to anyone who chooses 'Prospective' */}
+          {/* Prospective Routes */}
           <Route path="/prospective" element={<ProspectiveDashboard />} />
           <Route path="/prospective/quiz" element={<QuizPage />} />
           <Route path="/prospective/field/:fieldId" element={<FieldDetailPage />} />
 
-          {/* Locked Current Student Routes - Requires 'current' role */}
+          {/* Locked Current Student Routes */}
           <Route 
             path="/current" 
             element={
