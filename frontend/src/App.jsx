@@ -16,28 +16,30 @@ const AppLayout = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-gray-100 font-sans flex">
-      {/* 1. Only show Sidebar if NOT on the Landing Page */}
+      {/* 1. Sidebar remains hidden on mobile via its own internal 'hidden md:flex' */}
       {!isHomePage && <Sidebar />}
 
-      {/* 2. Content Wrapper - Adjust margin if sidebar is hidden */}
-      <div className={`flex-1 ${!isHomePage ? 'ml-72' : ''} flex flex-col min-h-screen`}>
+      {/* 2. Content Wrapper - ADJUSTED MARGIN FOR MOBILE */}
+      {/* Change: 'ml-72' becomes 'md:ml-72' so it is 0 on mobile */}
+      <div className={`flex-1 ${!isHomePage ? 'md:ml-72' : ''} flex flex-col min-h-screen w-full`}>
         
-        {/* Header - Stays consistent */}
-        <header className="w-full py-10 text-center">
-          <h1 className="text-5xl font-extrabold text-blue-900 tracking-tight">
+        {/* Header - Made text sizes responsive for smaller screens */}
+        <header className="w-full py-6 md:py-10 text-center px-4">
+          <h1 className="text-3xl md:text-5xl font-extrabold text-blue-900 tracking-tight">
             Faculty of Computing
           </h1>
-          <p className="text-lg text-gray-500 mt-3 font-medium">
+          <p className="text-sm md:text-lg text-gray-500 mt-2 md:mt-3 font-medium px-2">
             Smart Career Guidance & Academic Planning System
           </p>
         </header>
 
-        {/* Main Routes Content */}
-        <main className="max-w-7xl mx-auto px-8 pb-20 w-full">
+        {/* Main Content - Adjusted padding for mobile */}
+        {/* Change: 'px-8' becomes 'px-4 md:px-8' */}
+        <main className="max-w-7xl mx-auto px-4 md:px-8 pb-24 md:pb-20 w-full">
           {children}
         </main>
 
-        <footer className="w-full py-10 border-t border-gray-200 text-center text-gray-400 text-sm mt-auto">
+        <footer className="w-full py-6 md:py-10 border-t border-gray-200 text-center text-gray-400 text-[10px] md:text-sm mt-auto px-4">
           © 2026 Faculty of Computing Career Guidance System • Integrated with Gemini AI
         </footer>
       </div>
