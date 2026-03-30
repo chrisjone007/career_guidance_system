@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'; 
 import { useNavigate } from 'react-router-dom';
-import { db } from '../../../services/firebase'; 
-import { doc, getDoc, setDoc, serverTimestamp} from "firebase/firestore"; 
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { db, auth } from '../../../services/firebase'; // Added auth import
+import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs } from "firebase/firestore"; 
+import { signInAnonymously } from "firebase/auth"; // Added for session persistence
+
 const LandingPage = () => {
   const navigate = useNavigate();
   const [isLoginView, setIsLoginView] = useState(true);
@@ -10,36 +11,10 @@ const LandingPage = () => {
   const [studentName, setStudentName] = useState('');
   const [selectedField, setSelectedField] = useState('1');
   const [loading, setLoading] = useState(false);
-
   const [showForgotId, setShowForgotId] = useState(false);
-const [searchName, setSearchName] = useState('');
-const [foundId, setFoundId] = useState(null);
-const handleFindId = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  setFoundId(null);
-  const searchInput = searchName.toLowerCase().trim();
+  const [searchName, setSearchName] = useState('');
+  const [foundId, setFoundId] = useState(null);
 
-  try {
-    const studentsRef = collection(db, "students");
-  
-    const q = query(studentsRef, where("searchName", "==", searchInput));
-    
-    const querySnapshot = await getDocs(q);
-
-    if (!querySnapshot.empty) {
-      const userData = querySnapshot.docs[0].data();
-      setFoundId(userData.id);
-    } else {
-      alert("Still can't find you. Did you use a different name during registration?");
-    }
-  } catch (error) {
-    console.error("Search Error:", error);
-    alert("Database connection error.");
-  } finally {
-    setLoading(false);
-  }
-};
   // AUTO-REDIRECT: If already logged in, skip this page
   useEffect(() => {
     const role = localStorage.getItem('userRole');
@@ -48,66 +23,93 @@ const handleFindId = async (e) => {
   }, [navigate]);
 
   const handleLogin = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  const inputId = studentId.toUpperCase().trim();
-  
-  try {
-    const studentRef = doc(db, "students", inputId);
-    const studentSnap = await getDoc(studentRef);
+    e.preventDefault();
+    setLoading(true);
+    const inputId = studentId.toUpperCase().trim();
+    
+    try {
+      // 1. Check if the student exists in Firestore
+      const studentRef = doc(db, "students", inputId);
+      const studentSnap = await getDoc(studentRef);
 
-    if (studentSnap.exists()) {
-      const user = studentSnap.data();
-      
-      // 1. AUTO-UPDATE THE UI: Set the dropdown to the student's actual department
-      setSelectedField(user.field);
+      if (studentSnap.exists()) {
+        const user = studentSnap.data();
+        
+        // 2. IMPORTANT: Sign into Firebase Auth Anonymously
+        // This prevents App.jsx from clearing localStorage immediately
+        await signInAnonymously(auth);
 
-      // 2. SAVE SESSION: Use the field found in the database
-      localStorage.setItem('userRole', 'current');
-      localStorage.setItem('studentId', user.id);
-      localStorage.setItem('studentName', user.name);
-      localStorage.setItem('studentFieldId', user.field);
-      
-      // 3. Optional: Add a tiny delay so the user sees the dropdown change 
-      // before navigating (makes it look "smart" during a demo)
-      setTimeout(() => {
-        navigate('/current');
-      }, 500);
+        // 3. Update UI and Save Session
+        setSelectedField(user.field);
+        localStorage.setItem('userRole', 'current');
+        localStorage.setItem('studentId', user.id);
+        localStorage.setItem('studentName', user.name);
+        localStorage.setItem('studentFieldId', user.field);
+        
+        // Brief delay to allow Firebase Auth state to propagate
+        setTimeout(() => {
+          navigate('/current');
+        }, 500);
 
-    } else {
-      alert("Matric Number not found. Please register first!");
+      } else {
+        alert("Matric Number not found. Please register first!");
+      }
+    } catch (error) {
+      console.error("Login Error:", error);
+      alert("Error connecting to Cloud Database. Make sure Anonymous Auth is enabled in Firebase Console.");
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error(error);
-    alert("Error connecting to Cloud Database.");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const handleRegister = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  const inputId = studentId.toUpperCase().trim();
+    e.preventDefault();
+    setLoading(true);
+    const inputId = studentId.toUpperCase().trim();
 
-  try {
-    const studentRef = doc(db, "students", studentId.toUpperCase().trim());
-    await setDoc(studentRef, {
-      id: studentId.toUpperCase().trim(),
-      name: studentName.trim(), 
-      searchName: studentName.toLowerCase().trim(), 
-      field: selectedField,
-      createdAt: serverTimestamp()
-    });
+    try {
+      const studentRef = doc(db, "students", inputId);
+      await setDoc(studentRef, {
+        id: inputId,
+        name: studentName.trim(), 
+        searchName: studentName.toLowerCase().trim(), 
+        field: selectedField,
+        createdAt: serverTimestamp()
+      });
 
-    alert("Registration Successful!");
-    setIsLoginView(true);
-  } catch (error) {
-    alert("Registration failed. Check your internet.");
-  } finally {
-    setLoading(false);
-  }
-};
+      alert("Registration Successful! You can now login.");
+      setIsLoginView(true);
+    } catch (error) {
+      console.error("Reg Error:", error);
+      alert("Registration failed. Check your internet.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFindId = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setFoundId(null);
+    const searchInput = searchName.toLowerCase().trim();
+
+    try {
+      const studentsRef = collection(db, "students");
+      const q = query(studentsRef, where("searchName", "==", searchInput));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        const userData = querySnapshot.docs[0].data();
+        setFoundId(userData.id);
+      } else {
+        alert("Still can't find you. Did you use a different name during registration?");
+      }
+    } catch (error) {
+      console.error("Search Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6">
@@ -143,15 +145,6 @@ const handleFindId = async (e) => {
               value={studentId} onChange={(e) => setStudentId(e.target.value)}
             />
           </div>
-                      {/* <div className="flex justify-end mt-1">
-              <button 
-                type="button"
-                onClick={() => setShowForgotId(true)}
-                className="text-[9px] font-black text-blue-500 hover:text-blue-700 uppercase tracking-tighter"
-              >
-                Forgot Matric Number?
-              </button>
-            </div> */}
 
           {!isLoginView && (
             <div>
@@ -187,61 +180,70 @@ const handleFindId = async (e) => {
           </button>
         </form>
 
-        <div className="mt-8 pt-6 border-t text-center">
+        <div className="mt-8 pt-6 border-t text-center space-y-4">
+           <button 
+            type="button"
+            onClick={() => setShowForgotId(true)}
+            className="text-[11px] font-bold text-gray-400 hover:text-blue-600 uppercase tracking-tight block w-full"
+          >
+            Forgot Matric Number?
+          </button>
           <button 
             onClick={() => { localStorage.setItem('userRole', 'prospective'); navigate('/prospective'); }}
-            className="text-blue-600 font-bold hover:underline text-sm"
+            className="text-blue-600 font-bold hover:underline text-sm block w-full"
           >
             Enter as a prospective student →
           </button>
         </div>
       </div>
+
+      {/* FORGOT ID MODAL */}
       {showForgotId && (
-  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 z-50">
-    <div className="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl animate-in zoom-in duration-300">
-      <h3 className="text-xl font-black text-gray-900 mb-2">Recover Matric No</h3>
-      <p className="text-gray-500 text-sm mb-6">Enter your full registered name to retrieve your ID.</p>
-      
-      {!foundId ? (
-        <form onSubmit={handleFindId} className="space-y-4">
-          <input 
-            type="text" 
-            placeholder="e.g. Ojekunle Kehinde Deborah"
-            className="w-full p-4 bg-gray-50 rounded-xl border-2 border-transparent focus:border-blue-600 font-bold outline-none"
-            value={searchName}
-            onChange={(e) => setSearchName(e.target.value)}
-            required
-          />
-          <button className="w-full bg-blue-600 text-white py-4 rounded-xl font-black hover:bg-blue-700 transition-all">
-            {loading ? "Searching..." : "Find My ID"}
-          </button>
-        </form>
-      ) : (
-        <div className="bg-green-50 p-6 rounded-2xl text-center border-2 border-green-100">
-          <p className="text-green-600 text-[10px] font-black uppercase mb-1">ID Recovered</p>
-          <p className="text-2xl font-black text-gray-900 tracking-tight">{foundId}</p>
-          <button 
-            onClick={() => {
-              setStudentId(foundId); // Auto-fill the login field
-              setShowForgotId(false);
-              setFoundId(null);
-            }}
-            className="mt-4 text-sm font-bold text-blue-600 hover:underline"
-          >
-            Use this ID to Login →
-          </button>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 z-50">
+          <div className="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl">
+            <h3 className="text-xl font-black text-gray-900 mb-2">Recover Matric No</h3>
+            <p className="text-gray-500 text-sm mb-6">Enter your full name to retrieve your ID.</p>
+            
+            {!foundId ? (
+              <form onSubmit={handleFindId} className="space-y-4">
+                <input 
+                  type="text" 
+                  placeholder="Full registered name"
+                  className="w-full p-4 bg-gray-50 rounded-xl border-2 border-transparent focus:border-blue-600 font-bold outline-none"
+                  value={searchName}
+                  onChange={(e) => setSearchName(e.target.value)}
+                  required
+                />
+                <button className="w-full bg-blue-600 text-white py-4 rounded-xl font-black">
+                  {loading ? "Searching..." : "Find My ID"}
+                </button>
+              </form>
+            ) : (
+              <div className="bg-green-50 p-6 rounded-2xl text-center border-2 border-green-100">
+                <p className="text-green-600 text-[10px] font-black uppercase mb-1">ID Recovered</p>
+                <p className="text-2xl font-black text-gray-900">{foundId}</p>
+                <button 
+                  onClick={() => {
+                    setStudentId(foundId);
+                    setShowForgotId(false);
+                    setFoundId(null);
+                  }}
+                  className="mt-4 text-sm font-bold text-blue-600 underline"
+                >
+                  Use this ID to Login
+                </button>
+              </div>
+            )}
+            
+            <button 
+              onClick={() => { setShowForgotId(false); setFoundId(null); }}
+              className="w-full mt-4 text-gray-400 text-xs font-bold"
+            >
+              Close
+            </button>
+          </div>
         </div>
       )}
-      
-      <button 
-        onClick={() => { setShowForgotId(false); setFoundId(null); }}
-        className="w-full mt-4 text-gray-400 text-xs font-bold hover:text-gray-600"
-      >
-        Close
-      </button>
-    </div>
-  </div>
-)}
     </div>
   );
 };
