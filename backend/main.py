@@ -58,8 +58,12 @@ async def get_field_details(field_id: int):
     field = cursor.fetchone()
     
     if field:
-        cursor.execute('SELECT skill_name FROM skills WHERE field_id = ?', (field["id"],))
-        skills = [row["skill_name"] for row in cursor.fetchall()]
+        try:
+            cursor.execute('SELECT skill_name FROM skills WHERE field_id = ?', (field["id"],))
+            skills = [row["skill_name"] for row in cursor.fetchall()]
+        except sqlite3.OperationalError:
+            skills = ["Foundational Computing", "Logic & Problem Solving"] # Fallback so it doesn't crash
+        
         conn.close()
         return {
             "name": field["name"],

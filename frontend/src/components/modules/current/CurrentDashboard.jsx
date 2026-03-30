@@ -26,7 +26,7 @@ const CurrentDashboard = () => {
   const savedProgress = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
 
   useEffect(() => {
-    axios.get(`${API_BASE_URL}/${fieldId}`)
+    axios.get(`${API_BASE_URL}/current/opportunities/${fieldId}`)
       .then(res => {
         setOpportunities(res.data);
         setLoading(false);

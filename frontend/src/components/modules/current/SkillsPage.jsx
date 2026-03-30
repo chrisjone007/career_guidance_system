@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { db } from '../../../services/firebase'; 
 import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove} from "firebase/firestore";
-import { initializeApp } from "firebase/app";
 import API_BASE_URL from '../../../api/config';
 const SkillsPage = () => {
   const [skills, setSkills] = useState([]);
