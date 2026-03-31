@@ -121,6 +121,27 @@ async def get_required_skills(field_id: int):
     conn.close()
     return {"required_skills": skills}
 
+@app.get("/current/opportunities/details/{job_id}")
+async def get_job_details(job_id: int):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    # Query the database for the specific job ID
+    cursor.execute('SELECT * FROM opportunities WHERE id = ?', (job_id,))
+    row = cursor.fetchone()
+    conn.close()
+    
+    if row:
+        job = dict(row)
+        # Check if requirements exist and convert string "Skill1, Skill2" into a Python List
+        if job.get("requirements") and isinstance(job["requirements"], str):
+            job["requirements"] = [r.strip() for r in job["requirements"].split(',')]
+        else:
+            job["requirements"] = []
+            
+        return job
+    
+    raise HTTPException(status_code=404, detail="Job not found")
+
 @app.get("/current/opportunities/{field_id}")
 async def get_opportunities(field_id: int):
     conn = get_db_connection()
