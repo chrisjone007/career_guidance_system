@@ -11,6 +11,7 @@ import Sidebar from './components/Sidebar';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import { auth } from './services/firebase';
 import { onAuthStateChanged, signOut } from "firebase/auth";
+import JobDetailsPage from './components/modules/current/JobDetailsPage';
 
 // This sub-component handles layout logic (hiding sidebar on Home)
 const AppLayout = ({ children }) => {
@@ -118,6 +119,22 @@ function App() {
               </ProtectedRoute>
             } 
           />
+        <Route 
+          path="/current/opportunities" 
+          element={
+            <ProtectedRoute requiredRole="current">
+              <OpportunitiesPage />
+            </ProtectedRoute>
+          } 
+        />
+      <Route 
+        path="/current/opportunities/:id" 
+        element={
+          <ProtectedRoute requiredRole="current">
+            <JobDetailsPage />
+          </ProtectedRoute>
+        } 
+      />
         </Routes>
       </AppLayout>
     </Router>

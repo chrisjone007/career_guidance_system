@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import API_BASE_URL from '../../../api/config';
+import { useNavigate } from 'react-router-dom';
 
 const OpportunitiesPage = () => {
+  const navigate = useNavigate();
   const [fields, setFields] = useState([]);
   const [selectedField, setSelectedField] = useState("");
   const [jobs, setJobs] = useState([]);
@@ -90,7 +92,7 @@ const OpportunitiesPage = () => {
                   <p className="text-gray-500 font-bold">{job.company} • <span className="text-blue-600">{job.location || 'Remote'}</span></p>
                 </div>
               </div>
-              <button className="w-full md:w-auto bg-gray-900 text-white px-8 py-4 rounded-xl font-black hover:bg-blue-600 transition-colors">
+              <button onClick={() => navigate(`/current/opportunities/${job.id}`)} className="w-full md:w-auto bg-gray-900 text-white px-8 py-4 rounded-xl font-black hover:bg-blue-600 transition-colors">
                 View Details
               </button>
             </div>
