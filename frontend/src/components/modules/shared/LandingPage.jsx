@@ -9,7 +9,7 @@ const LandingPage = () => {
   const [isLoginView, setIsLoginView] = useState(true);
   const [studentId, setStudentId] = useState('');
   const [studentName, setStudentName] = useState('');
-  const [selectedField, setSelectedField] = useState('1');
+  const [selectedField, setSelectedField] = useState('');
   const [loading, setLoading] = useState(false);
   const [showForgotId, setShowForgotId] = useState(false);
   const [searchName, setSearchName] = useState('');
@@ -182,8 +182,9 @@ const LandingPage = () => {
             <select 
               className="w-full p-4 bg-gray-50 rounded-xl border-2 border-transparent focus:border-blue-600 font-bold outline-none appearance-none cursor-pointer"
               value={selectedField} onChange={(e) => setSelectedField(e.target.value)}
-              disabled={isLoginView}
+              disabled={isLoginView} required
             >
+              <option value="" disabled placeholder="Department">Select Department</option>
               <option value="1">Software Engineering</option>
               <option value="2">Data Science</option>
               <option value="3">Cybersecurity</option>
