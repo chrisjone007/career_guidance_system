@@ -63,29 +63,49 @@ const LandingPage = () => {
   };
 
   const handleRegister = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    const inputId = studentId.toUpperCase().trim();
+  e.preventDefault();
+  
+  // 1. FORMAT THE ID
+  const inputId = studentId.toUpperCase().trim();
+  const cleanName = studentName.trim();
 
-    try {
-      const studentRef = doc(db, "students", inputId);
-      await setDoc(studentRef, {
-        id: inputId,
-        name: studentName.trim(), 
-        searchName: studentName.toLowerCase().trim(), 
-        field: selectedField,
-        createdAt: serverTimestamp()
-      });
+  // 2. THE GATEKEEPER: Check if it starts with CSC/
+  if (!inputId.startsWith("CSC/")) {
+    alert("Invalid Matric Number! You must belong to Computer Science (CSC) to register.");
+    return; // This stops the code from reaching the database
+  }
 
-      alert("Registration Successful! You can now login.");
-      setIsLoginView(true);
-    } catch (error) {
-      console.error("Reg Error:", error);
-      alert("Registration failed. Check your internet.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // 3. (Optional) Check for minimum length to prevent "CSC/" only
+  if (inputId.length < 8) {
+    alert("Please enter a complete Matric Number.");
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const studentRef = doc(db, "students", inputId);
+    await setDoc(studentRef, {
+      id: inputId,
+      name: cleanName, 
+      searchName: cleanName.toLowerCase(), 
+      field: selectedField,
+      createdAt: serverTimestamp()
+    });
+
+    // Save session data for the Welcome message
+    localStorage.setItem('studentId', inputId);
+    localStorage.setItem('studentName', cleanName);
+    localStorage.setItem('studentFieldId', selectedField);
+
+    alert("Registration Successful!");
+    setIsLoginView(true);
+  } catch (error) {
+    alert("Registration failed. Check your internet.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleFindId = async (e) => {
     e.preventDefault();
@@ -140,7 +160,7 @@ const LandingPage = () => {
           <div>
             <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">Matric Number</label>
             <input 
-              type="text" placeholder="e.g. CSC/XXXX/XXXX" required
+              type="text" placeholder="e.g. CSC/2000/0001" required
               className="w-full p-4 bg-gray-50 rounded-xl border-2 border-transparent focus:border-blue-600 font-bold outline-none transition-all"
               value={studentId} onChange={(e) => setStudentId(e.target.value)}
             />
