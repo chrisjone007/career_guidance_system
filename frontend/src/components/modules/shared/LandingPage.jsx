@@ -71,7 +71,7 @@ const LandingPage = () => {
 
   // 2. THE GATEKEEPER: Check if it starts with CSC/
   if (!inputId.startsWith("CSC/")) {
-    alert("Invalid Matric Number! You must belong to Computer Science (CSC) to register.");
+    alert("Invalid Matric Number!");
     return; // This stops the code from reaching the database
   }
 
