@@ -135,7 +135,7 @@ const CurrentDashboard = () => {
                     </span>
                   </div>
 
-                  <button className="w-full py-3 md:py-4 bg-gray-900 text-white rounded-xl md:rounded-2xl font-black text-sm hover:bg-blue-600 transition-all">
+                  <button onClick={() => navigate('/current/opportunities')} className="w-full py-3 md:py-4 bg-gray-900 text-white rounded-xl md:rounded-2xl font-black text-sm hover:bg-blue-600 transition-all">
                     View Requirements
                   </button>
                 </div>
