@@ -7,18 +7,19 @@ from typing import List
 import google.generativeai as genai
 from dotenv import load_dotenv
 from database import init_db
+
 load_dotenv()
 API_KEY = os.getenv("GEMINI_API_KEY") 
 genai.configure(api_key=API_KEY)
 
 app = FastAPI()
 
+# Auto-initialize database on startup to ensure tables exist on Render
 @app.on_event("startup")
 async def startup_event():
-    # This runs every time Render starts or wakes up your app
     print("Initializing Database...")
     init_db()
-# Updated CORS to be more permissive to fix the empty dropdown issue
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], 
@@ -50,11 +51,11 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
-@app.get("/")
+@app.get("/api") # Changed to /api
 async def root():
     return {"message": "Career Guidance API is running 🚀"}
 
-@app.get("/api/departments")
+@app.get("/api/departments") # Ensured /api prefix
 async def get_departments():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -67,7 +68,7 @@ async def get_departments():
     finally:
         conn.close()
 
-@app.post("/auth/register")
+@app.post("/api/auth/register") # Added /api
 async def register_student(data: RegistrationRequest):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -90,9 +91,9 @@ async def register_student(data: RegistrationRequest):
     finally:
         conn.close()
 
-# --- PROSPECTIVE ROUTES ---
+# --- PROSPECTIVE ROUTES (All prefixed with /api) ---
 
-@app.get("/prospective/fields")
+@app.get("/api/prospective/fields")
 async def get_all_fields():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -101,7 +102,7 @@ async def get_all_fields():
     conn.close()
     return [dict(row) for row in rows]
 
-@app.get("/prospective/field/{field_id}")
+@app.get("/api/prospective/field/{field_id}")
 async def get_field_details(field_id: int): 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -124,7 +125,7 @@ async def get_field_details(field_id: int):
     conn.close()
     raise HTTPException(status_code=404, detail="Field not found")
 
-@app.post("/prospective/quiz")
+@app.post("/api/prospective/quiz")
 async def process_quiz(submission: QuizSubmission):
     prompt = (
         f"The student {submission.name} selected these interests: {', '.join(submission.answers)}. "
@@ -136,15 +137,14 @@ async def process_quiz(submission: QuizSubmission):
         response = model.generate_content(prompt)
         return {"data": response.text}
     except Exception as e:
-        # Fallback logic remains the same
         ans_str = " ".join(submission.answers).lower()
         if "security" in ans_str:
             return {"data": "Cybersecurity: Focused on digital defense."}
         return {"data": "Software Engineering: Great for general development."}
 
-# --- CURRENT STUDENT ROUTES ---
+# --- CURRENT STUDENT ROUTES (All prefixed with /api) ---
 
-@app.get("/current/opportunities/{field_id}")
+@app.get("/api/current/opportunities/{field_id}")
 async def get_opportunities(field_id: int):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -153,7 +153,7 @@ async def get_opportunities(field_id: int):
     conn.close()
     return [dict(row) for row in rows]
 
-@app.get("/current/opportunities/details/{job_id}")
+@app.get("/api/current/opportunities/details/{job_id}")
 async def get_job_details(job_id: int):
     conn = get_db_connection()
     cursor = conn.cursor()
