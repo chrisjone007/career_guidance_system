@@ -17,7 +17,7 @@ const LandingPage = () => {
   
   // NEW: State for departments fetched from your FastAPI backend
   const [availableDepartments, setAvailableDepartments] = useState([]);
-  const API_BASE_URL = "https://career-guidance-system-m14x.onrender.com";
+  const API_BASE_URL = "https://career-guidance-system-m14x.onrender.com/api";
 
   // 1. AUTO-REDIRECT & FETCH DEPARTMENTS
   useEffect(() => {
