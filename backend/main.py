@@ -1,34 +1,31 @@
 import os
-from fastapi import FastAPI, Body, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 import sqlite3
-import google.generativeai as genai
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List
+import google.generativeai as genai
 from dotenv import load_dotenv
 
 load_dotenv()
 API_KEY = os.getenv("GEMINI_API_KEY") 
 genai.configure(api_key=API_KEY)
+
 app = FastAPI()
 
+# Updated CORS to be more permissive to fix the empty dropdown issue
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://career-guidance-system-m14x.onrender.com",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173"
-    ],
+    allow_origins=["*"], 
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 model = genai.GenerativeModel(
     model_name='gemini-1.5-flash-latest',
-    system_instruction="You are a strict Career Mentor for the Faculty of Computing. You MUST recommend ONLY one of these 5 fields: Software Engineering, Data Science, Cybersecurity, AI & Robotics, or Cloud Computing."
+    system_instruction="You are a strict Career Mentor for the Faculty of Computing."
 )
-
-# --- MODELS ---
 
 class QuizSubmission(BaseModel):
     name: str
@@ -41,8 +38,6 @@ class RegistrationRequest(BaseModel):
     course_code: str
     level: str
 
-# --- DATABASE CONNECTION ---
-
 def get_db_connection():
     base_dir = os.path.dirname(os.path.abspath(__file__))
     db_path = os.path.join(base_dir, "career_guidance.db")
@@ -54,58 +49,42 @@ def get_db_connection():
 async def root():
     return {"message": "Career Guidance API is running 🚀"}
 
-# --- DEPARTMENT & REGISTRATION ROUTES ---
-
 @app.get("/departments")
 async def get_departments():
-    """Returns the list of all departments and their prefixes"""
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM departments')
-    rows = cursor.fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
+    try:
+        cursor.execute('SELECT * FROM departments')
+        rows = cursor.fetchall()
+        return [dict(row) for row in rows]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
 
 @app.post("/auth/register")
 async def register_student(data: RegistrationRequest):
-    """Registers a student with prefix validation"""
     conn = get_db_connection()
     cursor = conn.cursor()
-    
-    # 1. Verify Department exists
-    cursor.execute("SELECT * FROM departments WHERE id = ?", (data.dept_id,))
-    dept = cursor.fetchone()
-    
-    if not dept:
-        conn.close()
-        raise HTTPException(status_code=400, detail="Invalid Department selected.")
-    
-    # 2. Validate Course Code Prefix (e.g., CYB for Cybersecurity)
-    prefix = dept['code_prefix']
-    if not data.course_code.upper().startswith(prefix):
-        conn.close()
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Invalid course code. For {dept['dept_name']}, code must start with '{prefix}'."
-        )
-
-    # 3. Process Registration (Insert into your students table - make sure you have created it!)
     try:
-        # Note: I am assuming you have a 'students' table. 
-        # If not, create it in your database.py first.
+        cursor.execute("SELECT * FROM departments WHERE id = ?", (data.dept_id,))
+        dept = cursor.fetchone()
+        if not dept:
+            raise HTTPException(status_code=400, detail="Invalid Department.")
+
+        prefix = dept['code_prefix']
+        if not data.course_code.upper().startswith(prefix):
+            raise HTTPException(status_code=400, detail=f"Code must start with {prefix}")
+
         cursor.execute('''
             INSERT INTO students (name, matric_no, dept_name, course_code, level) 
             VALUES (?, ?, ?, ?, ?)
         ''', (data.name, data.matric_no, dept['dept_name'], data.course_code.upper(), data.level))
         conn.commit()
-    except sqlite3.OperationalError:
-        conn.close()
-        raise HTTPException(status_code=500, detail="Student table missing in database. Run init_db.")
+        return {"message": "Success"}
     finally:
         conn.close()
         
-    return {"message": f"Successfully registered as a {dept['dept_name']} student!"}
-
 # --- PROSPECTIVE ROUTES ---
 
 @app.get("/prospective/fields")

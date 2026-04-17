@@ -15,24 +15,26 @@ const LandingPage = () => {
   const [searchName, setSearchName] = useState('');
   const [foundId, setFoundId] = useState(null);
   
-  // NEW: State for departments fetched from your SQLite/FastAPI backend
+  // NEW: State for departments fetched from your FastAPI backend
   const [availableDepartments, setAvailableDepartments] = useState([]);
-  const API_BASE_URL = "https://career-guidance-system-m14x.onrender.com"; // Your Render URL
+  const API_BASE_URL = "https://career-guidance-system-m14x.onrender.com";
 
   // 1. AUTO-REDIRECT & FETCH DEPARTMENTS
   useEffect(() => {
+    // Session Check: If already logged in, redirect immediately
     const role = localStorage.getItem('userRole');
     if (role === 'current') navigate('/current');
     if (role === 'prospective') navigate('/prospective');
 
-    // Fetch the list of departments (CSC, CYB, etc.) from backend
     const fetchDepts = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/departments`);
+        if (!response.ok) throw new Error("Network response was not ok");
         const data = await response.json();
         setAvailableDepartments(data);
       } catch (err) {
-        console.error("Failed to load departments from Backend:", err);
+        console.error("Backend fetch error:", err);
+        // Fallback: If backend is down, dropdown stays empty but alert will warn the user
       }
     };
     fetchDepts();
@@ -44,13 +46,17 @@ const LandingPage = () => {
     const inputId = studentId.toUpperCase().trim();
     
     try {
+      // Check Firebase Firestore for the student ID
       const studentRef = doc(db, "students", inputId);
       const studentSnap = await getDoc(studentRef);
 
       if (studentSnap.exists()) {
         const user = studentSnap.data();
+        
+        // Ensure Firebase session persists
         await signInAnonymously(auth);
 
+        // Save local session data
         localStorage.setItem('userRole', 'current');
         localStorage.setItem('studentId', user.id);
         localStorage.setItem('studentName', user.name);
@@ -65,7 +71,7 @@ const LandingPage = () => {
       }
     } catch (error) {
       console.error("Login Error:", error);
-      alert("Login Error. Check your connection.");
+      alert("Error connecting to database. Please check your internet.");
     } finally {
       setLoading(false);
     }
@@ -76,14 +82,17 @@ const LandingPage = () => {
     const inputId = studentId.toUpperCase().trim();
     const cleanName = studentName.trim();
 
-    // 2. NEW DYNAMIC VALIDATION: Check against all prefixes from backend
+    // 2. DYNAMIC PREFIX VALIDATION
+    // This checks if the input starts with any prefix in our backend (CSC, CYB, SWE, etc.)
     const isValidPrefix = availableDepartments.some(dept => 
         inputId.startsWith(dept.code_prefix + "/")
     );
 
     if (!isValidPrefix) {
-      const allowed = availableDepartments.map(d => d.code_prefix).join(", ");
-      alert(`Invalid Matric Number! For this faculty, it must start with one of: ${allowed}/`);
+      const allowedPrefixes = availableDepartments.length > 0 
+        ? availableDepartments.map(d => d.code_prefix).join(", ") 
+        : "CSC, CYB"; // Basic fallback if fetch failed
+      alert(`Invalid Matric Number! Must start with one of: ${allowedPrefixes}/`);
       return;
     }
 
@@ -95,23 +104,26 @@ const LandingPage = () => {
     setLoading(true);
 
     try {
+      // Save to Firebase Cloud Firestore
       const studentRef = doc(db, "students", inputId);
       await setDoc(studentRef, {
         id: inputId,
         name: cleanName, 
-        searchName: cleanName.toLowerCase(), 
+        searchName: cleanName.toLowerCase(), // Needed for the "Forgot ID" search
         field: selectedField,
         createdAt: serverTimestamp()
       });
 
+      // Save local session
       localStorage.setItem('studentId', inputId);
       localStorage.setItem('studentName', cleanName);
       localStorage.setItem('studentFieldId', selectedField);
 
-      alert("Registration Successful!");
+      alert("Registration Successful! You can now login.");
       setIsLoginView(true);
     } catch (error) {
-      alert("Registration failed. Check your internet.");
+      console.error("Registration Error:", error);
+      alert("Registration failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -132,7 +144,7 @@ const LandingPage = () => {
         const userData = querySnapshot.docs[0].data();
         setFoundId(userData.id);
       } else {
-        alert("Matric Number not found for this name.");
+        alert("Could not find a student with that name.");
       }
     } catch (error) {
       console.error("Search Error:", error);
@@ -149,6 +161,7 @@ const LandingPage = () => {
           <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mt-1">Cloud Secure Access</p>
         </div>
         
+        {/* Toggle Buttons */}
         <div className="flex gap-4 mb-8 bg-gray-100 p-2 rounded-2xl">
           <button 
             type="button"
@@ -166,6 +179,7 @@ const LandingPage = () => {
           </button>
         </div>
 
+        {/* Main Form */}
         <form onSubmit={isLoginView ? handleLogin : handleRegister} className="space-y-4">
           <div>
             <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">Matric Number</label>
@@ -190,7 +204,7 @@ const LandingPage = () => {
               <div>
                 <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">Department</label>
                 <select 
-                  className="w-full p-4 bg-gray-50 rounded-xl border-2 border-transparent focus:border-blue-600 font-bold outline-none cursor-pointer"
+                  className="w-full p-4 bg-gray-50 rounded-xl border-2 border-transparent focus:border-blue-600 font-bold outline-none appearance-none cursor-pointer"
                   value={selectedField} onChange={(e) => setSelectedField(e.target.value)}
                   required
                 >
@@ -213,6 +227,7 @@ const LandingPage = () => {
           </button>
         </form>
 
+        {/* Footer Links */}
         <div className="mt-8 pt-6 border-t text-center space-y-4">
            <button 
             type="button"
@@ -230,15 +245,17 @@ const LandingPage = () => {
         </div>
       </div>
 
-      {/* MODAL (RECOVERY) */}
+      {/* RECOVERY MODAL */}
       {showForgotId && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 z-50">
           <div className="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl text-center">
             <h3 className="text-xl font-black text-gray-900 mb-2">Recover ID</h3>
+            <p className="text-gray-500 text-sm mb-6">Enter your full registered name.</p>
+            
             {!foundId ? (
               <form onSubmit={handleFindId} className="space-y-4">
                 <input 
-                  type="text" placeholder="Full registered name"
+                  type="text" placeholder="Full name"
                   className="w-full p-4 bg-gray-50 rounded-xl border-2 border-transparent focus:border-blue-600 font-bold outline-none"
                   value={searchName} onChange={(e) => setSearchName(e.target.value)} required
                 />
@@ -247,12 +264,24 @@ const LandingPage = () => {
                 </button>
               </form>
             ) : (
-              <div className="bg-green-50 p-6 rounded-2xl">
+              <div className="bg-green-50 p-6 rounded-2xl border-2 border-green-100">
+                <p className="text-green-600 text-[10px] font-black uppercase mb-1">ID Found</p>
                 <p className="text-2xl font-black text-gray-900">{foundId}</p>
-                <button onClick={() => { setStudentId(foundId); setShowForgotId(false); setFoundId(null); }} className="mt-4 text-sm font-bold text-blue-600 underline">Use this ID</button>
+                <button 
+                  onClick={() => { setStudentId(foundId); setShowForgotId(false); setFoundId(null); }} 
+                  className="mt-4 text-sm font-bold text-blue-600 underline"
+                >
+                  Use this ID to Login
+                </button>
               </div>
             )}
-            <button onClick={() => { setShowForgotId(false); setFoundId(null); }} className="w-full mt-4 text-gray-400 text-xs font-bold">Close</button>
+            
+            <button 
+              onClick={() => { setShowForgotId(false); setFoundId(null); }} 
+              className="w-full mt-4 text-gray-400 text-xs font-bold"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}
