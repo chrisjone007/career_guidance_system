@@ -6,13 +6,18 @@ from pydantic import BaseModel
 from typing import List
 import google.generativeai as genai
 from dotenv import load_dotenv
-
+from database import init_db
 load_dotenv()
 API_KEY = os.getenv("GEMINI_API_KEY") 
 genai.configure(api_key=API_KEY)
 
 app = FastAPI()
 
+@app.on_event("startup")
+async def startup_event():
+    # This runs every time Render starts or wakes up your app
+    print("Initializing Database...")
+    init_db()
 # Updated CORS to be more permissive to fix the empty dropdown issue
 app.add_middleware(
     CORSMiddleware,
@@ -84,7 +89,7 @@ async def register_student(data: RegistrationRequest):
         return {"message": "Success"}
     finally:
         conn.close()
-        
+
 # --- PROSPECTIVE ROUTES ---
 
 @app.get("/prospective/fields")
