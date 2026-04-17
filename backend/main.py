@@ -54,7 +54,7 @@ def get_db_connection():
 async def root():
     return {"message": "Career Guidance API is running 🚀"}
 
-@app.get("/departments")
+@app.get("/api/departments")
 async def get_departments():
     conn = get_db_connection()
     cursor = conn.cursor()
