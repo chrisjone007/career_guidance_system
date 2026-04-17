@@ -10,16 +10,31 @@ def get_db_connection():
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn
+
 def init_db():
-    conn = sqlite3.connect('career_guidance.db')
+    # Use the absolute path consistency here as well
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    db_path = os.path.join(base_dir, "career_guidance.db")
+    
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
-    # Drop tables to start fresh and fix the ID mapping
+    # Drop tables to start fresh
     cursor.execute('DROP TABLE IF EXISTS opportunities')
     cursor.execute('DROP TABLE IF EXISTS skills')
     cursor.execute('DROP TABLE IF EXISTS fields')
+    cursor.execute('DROP TABLE IF EXISTS departments')
 
-    # 1. Create Fields Table
+    # 1. Create Departments Table (New)
+    cursor.execute('''
+        CREATE TABLE departments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            dept_name TEXT NOT NULL,
+            code_prefix TEXT NOT NULL
+        )
+    ''')
+
+    # 2. Create Fields Table
     cursor.execute('''
         CREATE TABLE fields (
             id INTEGER PRIMARY KEY, 
@@ -28,7 +43,7 @@ def init_db():
         )
     ''')
 
-    # 2. Create Skills Table
+    # 3. Create Skills Table
     cursor.execute('''
         CREATE TABLE skills (
             id INTEGER PRIMARY KEY, 
@@ -38,7 +53,7 @@ def init_db():
         )
     ''')
 
-    # 3. Create Opportunities Table
+    # 4. Create Opportunities Table
     cursor.execute('''
         CREATE TABLE opportunities (
             id INTEGER PRIMARY KEY, 
@@ -51,6 +66,15 @@ def init_db():
     ''')
 
     # DATA INSERTION
+    # Departments (Handling multiple course codes)
+    departments = [
+        ('Computer Science', 'CSC'),
+        ('Cybersecurity', 'CYB'),
+        ('Software Engineering', 'SWE'),
+        ('Information Technology', 'IFT'),
+        ('Data Science', 'DSC')
+    ]
+
     fields = [
         (1, 'Software Engineering', 'Designing, developing, and maintaining complex software systems.'),
         (2, 'Data Science', 'Extracting insights from structured and unstructured data.'),
@@ -75,13 +99,15 @@ def init_db():
         ('Cloud Architect Intern', 'MainOne', 'Lagos', 5)
     ]
 
+    # Insert Data
+    cursor.executemany("INSERT INTO departments (dept_name, code_prefix) VALUES (?,?)", departments)
     cursor.executemany("INSERT INTO fields VALUES (?,?,?)", fields)
     cursor.executemany("INSERT INTO skills (skill_name, field_id) VALUES (?,?)", skills)
     cursor.executemany("INSERT INTO opportunities (title, company, location, field_id) VALUES (?,?,?,?)", opportunities)
 
     conn.commit()
     conn.close()
-    print("✅ Database Reset: 5 Fields, 15 Skills, and 5 Opportunities created.")
+    print("✅ Database Reset: Departments added, Fields, Skills, and Opportunities created.")
 
 if __name__ == "__main__":
     init_db()
