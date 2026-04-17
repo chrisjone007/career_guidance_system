@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'; 
 import { useNavigate } from 'react-router-dom';
-import { db, auth } from '../../../services/firebase'; // Added auth import
+import { db, auth } from '../../../services/firebase'; 
 import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs } from "firebase/firestore"; 
-import { signInAnonymously } from "firebase/auth"; // Added for session persistence
+import { signInAnonymously } from "firebase/auth"; 
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -14,12 +14,28 @@ const LandingPage = () => {
   const [showForgotId, setShowForgotId] = useState(false);
   const [searchName, setSearchName] = useState('');
   const [foundId, setFoundId] = useState(null);
+  
+  // NEW: State for departments fetched from your SQLite/FastAPI backend
+  const [availableDepartments, setAvailableDepartments] = useState([]);
+  const API_BASE_URL = "https://career-guidance-system-m14x.onrender.com"; // Your Render URL
 
-  // AUTO-REDIRECT: If already logged in, skip this page
+  // 1. AUTO-REDIRECT & FETCH DEPARTMENTS
   useEffect(() => {
     const role = localStorage.getItem('userRole');
     if (role === 'current') navigate('/current');
     if (role === 'prospective') navigate('/prospective');
+
+    // Fetch the list of departments (CSC, CYB, etc.) from backend
+    const fetchDepts = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/departments`);
+        const data = await response.json();
+        setAvailableDepartments(data);
+      } catch (err) {
+        console.error("Failed to load departments from Backend:", err);
+      }
+    };
+    fetchDepts();
   }, [navigate]);
 
   const handleLogin = async (e) => {
@@ -28,25 +44,18 @@ const LandingPage = () => {
     const inputId = studentId.toUpperCase().trim();
     
     try {
-      // 1. Check if the student exists in Firestore
       const studentRef = doc(db, "students", inputId);
       const studentSnap = await getDoc(studentRef);
 
       if (studentSnap.exists()) {
         const user = studentSnap.data();
-        
-        // 2. IMPORTANT: Sign into Firebase Auth Anonymously
-        // This prevents App.jsx from clearing localStorage immediately
         await signInAnonymously(auth);
 
-        // 3. Update UI and Save Session
-        setSelectedField(user.field);
         localStorage.setItem('userRole', 'current');
         localStorage.setItem('studentId', user.id);
         localStorage.setItem('studentName', user.name);
         localStorage.setItem('studentFieldId', user.field);
         
-        // Brief delay to allow Firebase Auth state to propagate
         setTimeout(() => {
           navigate('/current');
         }, 500);
@@ -56,56 +65,57 @@ const LandingPage = () => {
       }
     } catch (error) {
       console.error("Login Error:", error);
-      alert("Error connecting to Cloud Database. Make sure Anonymous Auth is enabled in Firebase Console.");
+      alert("Login Error. Check your connection.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleRegister = async (e) => {
-  e.preventDefault();
-  
-  // 1. FORMAT THE ID
-  const inputId = studentId.toUpperCase().trim();
-  const cleanName = studentName.trim();
+    e.preventDefault();
+    const inputId = studentId.toUpperCase().trim();
+    const cleanName = studentName.trim();
 
-  // 2. THE GATEKEEPER: Check if it starts with CSC/
-  if (!inputId.startsWith("CSC/")) {
-    alert("Invalid Matric Number!");
-    return; // This stops the code from reaching the database
-  }
+    // 2. NEW DYNAMIC VALIDATION: Check against all prefixes from backend
+    const isValidPrefix = availableDepartments.some(dept => 
+        inputId.startsWith(dept.code_prefix + "/")
+    );
 
-  // 3. (Optional) Check for minimum length to prevent "CSC/" only
-  if (inputId.length < 8) {
-    alert("Please enter a complete Matric Number.");
-    return;
-  }
+    if (!isValidPrefix) {
+      const allowed = availableDepartments.map(d => d.code_prefix).join(", ");
+      alert(`Invalid Matric Number! For this faculty, it must start with one of: ${allowed}/`);
+      return;
+    }
 
-  setLoading(true);
+    if (inputId.length < 8) {
+      alert("Please enter a complete Matric Number.");
+      return;
+    }
 
-  try {
-    const studentRef = doc(db, "students", inputId);
-    await setDoc(studentRef, {
-      id: inputId,
-      name: cleanName, 
-      searchName: cleanName.toLowerCase(), 
-      field: selectedField,
-      createdAt: serverTimestamp()
-    });
+    setLoading(true);
 
-    // Save session data for the Welcome message
-    localStorage.setItem('studentId', inputId);
-    localStorage.setItem('studentName', cleanName);
-    localStorage.setItem('studentFieldId', selectedField);
+    try {
+      const studentRef = doc(db, "students", inputId);
+      await setDoc(studentRef, {
+        id: inputId,
+        name: cleanName, 
+        searchName: cleanName.toLowerCase(), 
+        field: selectedField,
+        createdAt: serverTimestamp()
+      });
 
-    alert("Registration Successful!");
-    setIsLoginView(true);
-  } catch (error) {
-    alert("Registration failed. Check your internet.");
-  } finally {
-    setLoading(false);
-  }
-};
+      localStorage.setItem('studentId', inputId);
+      localStorage.setItem('studentName', cleanName);
+      localStorage.setItem('studentFieldId', selectedField);
+
+      alert("Registration Successful!");
+      setIsLoginView(true);
+    } catch (error) {
+      alert("Registration failed. Check your internet.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleFindId = async (e) => {
     e.preventDefault();
@@ -122,7 +132,7 @@ const LandingPage = () => {
         const userData = querySnapshot.docs[0].data();
         setFoundId(userData.id);
       } else {
-        alert("Still can't find you. Did you use a different name during registration?");
+        alert("Matric Number not found for this name.");
       }
     } catch (error) {
       console.error("Search Error:", error);
@@ -160,38 +170,40 @@ const LandingPage = () => {
           <div>
             <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">Matric Number</label>
             <input 
-              type="text" placeholder="e.g. CSC/2000/0001" required
+              type="text" placeholder="e.g. CYB/2026/0001" required
               className="w-full p-4 bg-gray-50 rounded-xl border-2 border-transparent focus:border-blue-600 font-bold outline-none transition-all"
               value={studentId} onChange={(e) => setStudentId(e.target.value)}
             />
           </div>
 
           {!isLoginView && (
-            <div>
-              <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">Full Name</label>
-              <input 
-                type="text" placeholder="e.g. Ojekunle Deborah" required
-                className="w-full p-4 bg-gray-50 rounded-xl border-2 border-transparent focus:border-blue-600 font-bold outline-none"
-                value={studentName} onChange={(e) => setStudentName(e.target.value)}
-              />
-            </div>
-          )}
+            <>
+              <div>
+                <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">Full Name</label>
+                <input 
+                  type="text" placeholder="Enter Full Name" required
+                  className="w-full p-4 bg-gray-50 rounded-xl border-2 border-transparent focus:border-blue-600 font-bold outline-none"
+                  value={studentName} onChange={(e) => setStudentName(e.target.value)}
+                />
+              </div>
 
-          <div>
-            <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">Department</label>
-            <select 
-              className="w-full p-4 bg-gray-50 rounded-xl border-2 border-transparent focus:border-blue-600 font-bold outline-none appearance-none cursor-pointer"
-              value={selectedField} onChange={(e) => setSelectedField(e.target.value)}
-              disabled={isLoginView} required
-            >
-              <option value="" disabled placeholder="Department">Select Department</option>
-              <option value="1">Software Engineering</option>
-              <option value="2">Data Science</option>
-              <option value="3">Cybersecurity</option>
-              <option value="4">AI & Robotics</option>
-              <option value="5">Cloud Computing</option>
-            </select>
-          </div>
+              <div>
+                <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">Department</label>
+                <select 
+                  className="w-full p-4 bg-gray-50 rounded-xl border-2 border-transparent focus:border-blue-600 font-bold outline-none cursor-pointer"
+                  value={selectedField} onChange={(e) => setSelectedField(e.target.value)}
+                  required
+                >
+                  <option value="">Select Department</option>
+                  {availableDepartments.map(dept => (
+                    <option key={dept.id} value={dept.id}>
+                      {dept.dept_name} ({dept.code_prefix})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
 
           <button 
             disabled={loading} 
@@ -218,50 +230,29 @@ const LandingPage = () => {
         </div>
       </div>
 
-      {/* FORGOT ID MODAL */}
+      {/* MODAL (RECOVERY) */}
       {showForgotId && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 z-50">
-          <div className="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl">
-            <h3 className="text-xl font-black text-gray-900 mb-2">Recover Matric No</h3>
-            <p className="text-gray-500 text-sm mb-6">Enter your full name to retrieve your ID.</p>
-            
+          <div className="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl text-center">
+            <h3 className="text-xl font-black text-gray-900 mb-2">Recover ID</h3>
             {!foundId ? (
               <form onSubmit={handleFindId} className="space-y-4">
                 <input 
-                  type="text" 
-                  placeholder="Full registered name"
+                  type="text" placeholder="Full registered name"
                   className="w-full p-4 bg-gray-50 rounded-xl border-2 border-transparent focus:border-blue-600 font-bold outline-none"
-                  value={searchName}
-                  onChange={(e) => setSearchName(e.target.value)}
-                  required
+                  value={searchName} onChange={(e) => setSearchName(e.target.value)} required
                 />
                 <button className="w-full bg-blue-600 text-white py-4 rounded-xl font-black">
                   {loading ? "Searching..." : "Find My ID"}
                 </button>
               </form>
             ) : (
-              <div className="bg-green-50 p-6 rounded-2xl text-center border-2 border-green-100">
-                <p className="text-green-600 text-[10px] font-black uppercase mb-1">ID Recovered</p>
+              <div className="bg-green-50 p-6 rounded-2xl">
                 <p className="text-2xl font-black text-gray-900">{foundId}</p>
-                <button 
-                  onClick={() => {
-                    setStudentId(foundId);
-                    setShowForgotId(false);
-                    setFoundId(null);
-                  }}
-                  className="mt-4 text-sm font-bold text-blue-600 underline"
-                >
-                  Use this ID to Login
-                </button>
+                <button onClick={() => { setStudentId(foundId); setShowForgotId(false); setFoundId(null); }} className="mt-4 text-sm font-bold text-blue-600 underline">Use this ID</button>
               </div>
             )}
-            
-            <button 
-              onClick={() => { setShowForgotId(false); setFoundId(null); }}
-              className="w-full mt-4 text-gray-400 text-xs font-bold"
-            >
-              Close
-            </button>
+            <button onClick={() => { setShowForgotId(false); setFoundId(null); }} className="w-full mt-4 text-gray-400 text-xs font-bold">Close</button>
           </div>
         </div>
       )}
