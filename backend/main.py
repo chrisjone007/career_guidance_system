@@ -13,7 +13,9 @@ API_KEY = os.getenv("GEMINI_API_KEY")
 genai.configure(api_key=API_KEY)
 
 app = FastAPI()
-
+@app.get("/api/test")
+async def test_api():
+    return {"status": "The API is alive and reachable!"}
 # Auto-initialize database on startup to ensure tables exist on Render
 @app.on_event("startup")
 async def startup_event():
