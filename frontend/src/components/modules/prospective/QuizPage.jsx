@@ -202,7 +202,7 @@ const QuizPage = () => {
                <span className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-xs text-gray-400 group-hover:bg-blue-600 group-hover:text-white transition-colors">
                  {String.fromCharCode(65 + i)}
                </span>
-               {opt}
+               {opt.text}
             </span>
             <span className="opacity-0 group-hover:opacity-100 text-blue-600 transition-all translate-x-4 group-hover:translate-x-0">
               ➜
