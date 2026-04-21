@@ -177,3 +177,15 @@ async def get_job_details(job_id: int):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+    
+@app.get("/api/current/skills/{field_id}")
+async def get_skills_by_field(field_id: int):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT skill_name FROM skills WHERE field_id = ?', (field_id,))
+    rows = cursor.fetchall()
+    conn.close()
+    
+    if not rows:
+        return [] # Return empty list if no skills found
+    return [row["skill_name"] for row in rows]
