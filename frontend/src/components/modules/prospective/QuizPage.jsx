@@ -100,23 +100,22 @@ const QuizPage = () => {
     }
   };
 
-  const submitQuiz = async (finalAnswers) => {
+ const submitQuiz = async (finalAnswers) => {
     setLoading(true);
     try {
-      // This MUST match the 'QuizSubmission' class in your main.py
       const res = await axios.post(`${API_BASE_URL}/prospective/quiz`, {
         name: studentName, 
         answers: finalAnswers
       });
-      
       setResult(res.data.data); 
     } catch (err) {
       console.error("Submission Error:", err);
-      alert("AI Service is currently offline. Please ensure your Python backend is running.");
+      alert("AI Service is currently offline.");
+      setLoading(false); // Manually set to false here to unstick the UI
     } finally {
       setLoading(false);
     }
-  };
+};
 
   const restartQuiz = () => {
     setStep(0);
