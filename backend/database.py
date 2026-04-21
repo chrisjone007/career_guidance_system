@@ -79,9 +79,9 @@ def init_db():
     departments = [
         ('Computer Science', 'CSC'),
         ('Cybersecurity', 'CYB'),
-        ('Software Engineering', 'SWE'),
+        ('Software Engineering', 'SEN'),
         ('Information Technology', 'IFT'),
-        ('Data Science', 'DSC')
+        ('Data Science', 'DSA')
     ]
 
     fields = [
