@@ -55,7 +55,8 @@ def get_db_connection():
 async def root():
     return {"message": "Career Guidance API is running 🚀"}
 
-@app.get("/api/departments") # Ensured /api prefix
+@app.get("/api/departments", tags=["General"])
+@app.get("/api/departments/", include_in_schema=False) # Ensured /api prefix
 async def get_departments():
     conn = get_db_connection()
     cursor = conn.cursor()
