@@ -13,13 +13,12 @@ const SkillsPage = () => {
   const studentId = localStorage.getItem('studentId');
   const fieldId = localStorage.getItem('studentFieldId') || "1";
 
-  const fieldNames = { 
-    "1": "Software Engineering", 
-    "2": "Data Science", 
-    "3": "Cybersecurity", 
-    "4": "AI & Robotics", 
-    "5": "Cloud Computing" 
-  };
+ const fieldNames = { 
+  "1": "Computer Science", 
+  "2": "Cybersecurity", 
+  "3": "Software Engineering", 
+  "4": "Data Science" 
+};
 
   useEffect(() => {
     const fetchSkillsData = async () => {

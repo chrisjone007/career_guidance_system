@@ -41,7 +41,6 @@ def init_db():
     ''')
 
     # 3. Students Table
-    # This matches your main.py registration logic
     cursor.execute('''
         CREATE TABLE students (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -77,35 +76,38 @@ def init_db():
 
     # --- DATA INSERTION ---
     departments = [
-        ('Computer Science', 'CSC'),
-        ('Cybersecurity', 'CYB'),
-        ('Software Engineering', 'SEN'),
-        ('Information Technology', 'IFT'),
-        ('Data Science', 'DSA')
+        ('Computer Science', 'CSC'),        # ID 1
+        ('Cybersecurity', 'CYB'),           # ID 2
+        ('Software Engineering', 'SEN'),    # ID 3
+        ('Data Science', 'DSA')             # ID 4
     ]
 
     fields = [
-        (1, 'Software Engineering', 'Designing and building software systems.'),
-        (2, 'Data Science', 'Analyzing data for insights.'),
-        (3, 'Cybersecurity', 'Protecting digital assets.'),
-        (4, 'Artificial Intelligence', 'Creating intelligent machines.'),
-        (5, 'Cloud Computing', 'Internet-based computing services.')
+        (1, 'Computer Science', 'Foundational computing, algorithms, and systems.'),
+        (2, 'Cybersecurity', 'Protecting networks, systems, and programs from digital attacks.'),
+        (3, 'Software Engineering', 'The systematic application of engineering approaches to software development.'),
+        (4, 'Data Science', 'Extracting knowledge and insights from structured and unstructured data.')
     ]
 
     skills = [
-        ('React & Next.js', 1), ('Python Backend', 1),
-        ('Machine Learning', 2), ('Data Visualization', 2),
-        ('Ethical Hacking', 3), ('Network Security', 3),
-        ('Neural Networks', 4), ('Natural Language Processing', 4),
-        ('AWS/Azure', 5), ('Docker/Kubernetes', 5)
+        # Computer Science (ID 1)
+        ('Data Structures & Algorithms', 1), ('Operating Systems', 1), ('C++ Programming', 1),
+        
+        # Cybersecurity (ID 2)
+        ('Ethical Hacking', 2), ('Network Security', 2), ('Penetration Testing', 2), ('Cryptography', 2),
+        
+        # Software Engineering (ID 3)
+        ('React & Next.js', 3), ('System Architecture', 3), ('CI/CD Pipelines', 3), ('Mobile App Dev', 3),
+        
+        # Data Science (ID 4)
+        ('Machine Learning', 4), ('Statistical Analysis', 4), ('Big Data (Hadoop/Spark)', 4), ('Python for Data Science', 4)
     ]
 
     opportunities = [
-        ('Full Stack Intern', 'Microsoft', 'Lagos', 1),
-        ('Junior Data Analyst', 'KPMG', 'Remote', 2),
-        ('Security Consultant', 'Check Point', 'Abuja', 3),
-        ('AI Resident', 'Google Research', 'Remote', 4),
-        ('Cloud Architect Intern', 'MainOne', 'Lagos', 5)
+        ('Systems Researcher', 'Google', 'Remote', 1),
+        ('SOC Analyst', 'CrowdStrike', 'Lagos', 2),
+        ('Frontend Engineer', 'Vercel', 'Remote', 3),
+        ('Data Strategist', 'Netflix', 'Remote', 4)
     ]
 
     cursor.executemany("INSERT INTO departments (dept_name, code_prefix) VALUES (?,?)", departments)
@@ -115,7 +117,7 @@ def init_db():
 
     conn.commit()
     conn.close()
-    print("✅ Database Initialized with all tables and data!")
+    print("✅ Database Initialized with synchronized IDs!")
 
 if __name__ == "__main__":
     init_db()
