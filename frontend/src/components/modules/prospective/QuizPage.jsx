@@ -17,53 +17,63 @@ const QuizPage = () => {
       id: 1,
       q: "What kind of tasks do you find most interesting?", 
       options: [
-        "Building visible apps & websites", 
-        "Finding hidden patterns in large data", 
-        "Designing complex logic & algorithms", 
-        "Defending systems from digital threats"
+        { text: "Designing complex logic & core algorithms", weight: { "1": 5 } }, // CSC
+        { text: "Defending systems from digital threats", weight: { "2": 5 } },   // CYB
+        { text: "Building visible apps & websites", weight: { "3": 5 } },         // SEN
+        { text: "Finding hidden patterns in large data", weight: { "4": 5 } }     // DSA
       ] 
     },
     { 
       id: 2,
       q: "Which of these sounds like a dream job environment?", 
       options: [
-        "A creative design studio", 
-        "A research lab with massive datasets", 
-        "A high-performance engineering firm", 
-        "A secure network operations center"
+        { text: "A high-performance engineering firm", weight: { "1": 5 } },      // CSC
+        { text: "A secure network operations center", weight: { "2": 5 } },       // CYB
+        { text: "A creative software design studio", weight: { "3": 5 } },       // SEN
+        { text: "A research lab with massive datasets", weight: { "4": 5 } }      // DSA
       ] 
     },
     { 
       id: 3,
-      q: "How do you feel about working with complex mathematics?", 
+      q: "How do you feel about working with mathematics?", 
       options: [
-        "I prefer basic logic and design", 
-        "I love statistics and probability", 
-        "Math is my strongest suit", 
-        "I prefer focusing on rules and protocols"
+        { text: "Math is my strongest suit (Discrete/Calculus)", weight: { "1": 5 } }, // CSC
+        { text: "I prefer focusing on rules and protocols", weight: { "2": 5 } },      // CYB
+        { text: "I prefer basic logic and user-centered design", weight: { "3": 5 } }, // SEN
+        { text: "I love statistics and probability", weight: { "4": 5 } }              // DSA
       ] 
     },
     { 
       id: 4,
       q: "What is your favorite way to solve a problem?", 
       options: [
-        "Visualizing a user interface", 
-        "Creating a predictive model", 
-        "Writing efficient, clean code", 
-        "Identifying a system's vulnerability"
+        { text: "Writing highly efficient, optimized code", weight: { "1": 5 } }, // CSC
+        { text: "Identifying a system's vulnerability", weight: { "2": 5 } },      // CYB
+        { text: "Visualizing a smooth user interface", weight: { "3": 5 } },       // SEN
+        { text: "Creating a predictive machine learning model", weight: { "4": 5 } } // DSA
       ] 
     },
     { 
       id: 5,
       q: "Which technology sounds most exciting to you?", 
       options: [
-        "React & Mobile Frameworks", 
-        "AI & Neural Networks", 
-        "Compilers & Cloud Architecture", 
-        "Firewalls & Encryption"
+        { text: "Compilers & Operating Systems", weight: { "1": 5 } }, // CSC
+        { text: "Firewalls & Advanced Encryption", weight: { "2": 5 } }, // CYB
+        { text: "React, Next.js & Mobile Frameworks", weight: { "3": 5 } }, // SEN
+        { text: "AI & Neural Networks", weight: { "4": 5 } } // DSA
+      ] 
+    },
+    { 
+      id: 6,
+      q: "If you were managing city traffic data, what would you do first?", 
+      options: [
+        { text: "Optimize the database for faster data retrieval.", weight: { "1": 5 } }, // CSC
+        { text: "Protect the traffic signals from being hacked.", weight: { "2": 5 } },   // CYB
+        { text: "Build an app for drivers to see traffic live.", weight: { "3": 5 } },    // SEN
+        { text: "Predict where jams will happen next week.", weight: { "4": 5 } }        // DSA
       ] 
     }
-  ];
+];
 
   const calculateProgress = () => {
     return Math.round((step / questions.length) * 100);
