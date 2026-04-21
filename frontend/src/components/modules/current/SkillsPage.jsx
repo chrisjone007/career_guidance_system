@@ -22,6 +22,9 @@ const SkillsPage = () => {
   };
 
   useEffect(() => {
+    if (!studentId || !fieldId) return; // Wait until we have the data
+  fetchSkillsData();
+}, [fieldId, studentId]);
     const fetchSkillsData = async () => {
       try {
         const apiRes = await axios.get(`${API_BASE_URL}/current/skills/${fieldId}`);

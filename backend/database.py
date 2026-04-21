@@ -20,7 +20,7 @@ def init_db():
     cursor.execute('DROP TABLE IF EXISTS skills')
     cursor.execute('DROP TABLE IF EXISTS fields')
     cursor.execute('DROP TABLE IF EXISTS departments')
-    cursor.execute('DROP TABLE IF EXISTS students') # Added this
+    cursor.execute('DROP TABLE IF EXISTS students')
 
     # 1. Departments Table
     cursor.execute('''
@@ -40,7 +40,7 @@ def init_db():
         )
     ''')
 
-    # 3. Students Table (CRITICAL MISSING PIECE)
+    # 3. Students Table
     # This matches your main.py registration logic
     cursor.execute('''
         CREATE TABLE students (
